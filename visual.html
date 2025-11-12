@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Expresiones Regulares</title>
+
+    <script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/vis-network.min.css" rel="stylesheet"
+        type="text/css" />
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #4a69bd;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+        }
+
+        .inputs {
+            padding: 30px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1.1em;
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button#status-loading,
+        button#status-loading-validar {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        #resultado-validacion button {
+            margin-bottom: 25px;
+        }
+
+        .resultados {
+            padding: 30px;
+        }
+
+        .resultado-bloque {
+            margin-bottom: 30px;
+        }
+
+        .resultado-bloque h2 {
+            border-bottom: 2px solid #4a69bd;
+            padding-bottom: 8px;
+            color: #4a69bd;
+            margin-top: 0;
+        }
+
+        .botones-diagrama {
+            padding: 0;
+            margin-bottom: -1px;
+        }
+
+        .btn-toggle {
+            background-color: #f0f2f5;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .btn-toggle:hover {
+            background-color: #e0e6f3;
+        }
+
+        .btn-toggle.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+            font-weight: bold;
+            color: #4a69bd;
+        }
+
+        #resultado-afn {
+            display: none;
+        }
+
+        #resultado-arbol {
+            width: 100%;
+            height: 1000px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fdfdfd;
+        }
+
+        #resultado-afd,
+        #resultado-afn {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fdfdfd;
+        }
+
+        .tablas-contenedor {
+            display: flex;
+            gap: 20px;
+        }
+
+        .tabla-columna {
+            flex: 1;
+        }
+
+        .tabla-columna h3 {
+            text-align: center;
+            margin-top: 0;
+            color: #555;
+            font-size: 1.2em;
+        }
+
+        .tabla-resultados {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.95em;
+        }
+
+        .tabla-resultados th,
+        .tabla-resultados td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+
+        .tabla-resultados th {
+            background-color: #f0f2f5;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .tabla-resultados .estado-header,
+        .tabla-resultados .posicion-header {
+            background-color: #e0e6f3;
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+
+        #tabla-validacion .valido {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        #tabla-validacion .invalido {
+            background-color: #ffebee;
+            color: #c62828;
+            font-weight: bold;
+        }
+
+        #error-box {
+            display: none;
+            padding: 20px;
+            border-radius: 6px;
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid #ef9a9a;
+            background-color: #ffebee;
+            color: #c62828;
+            margin-top: 20px;
+        }
+
+        .vis-network canvas {
+            font-family: 'Consolas', monospace !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Resolución de Autómatas</h1>
+            <p>Construcción de Árbol, Tablas, AFD, AFN y Validación de cadenas</p>
+        </header>
+
+        <div class="inputs">
+            <div class="form-group">
+                <label for="expresion">1. Ingrese la Expresión Regular: Cadenas numéricas, Identificadores y Cadenas de texto</label>
+                <input type="text" id="expresion" placeholder="Ejemplos: 9(2)* , (a|b)(a|b|1)* , Hola. ">
+            </div>
+
+            <button id="btn-construir">Construir</button>
+
+            <div id="error-box"></div>
+        </div>
+
+        <div class="resultados">
+
+            <div class="resultado-bloque">
+                <h2>ÁrboL de Expresión</h2>
+                <div id="resultado-arbol"></div>
+            </div>
+
+            <div class="resultado-bloque">
+                <h2>Tablas de Transición y Siguiente Posición</h2>
+                <div class="tablas-contenedor">
+                    <div class="tabla-columna" id="resultado-tabla-transiciones">
+                        <h3>Tabla de Transiciones</h3>
+                    </div>
+                    <div class="tabla-columna" id="resultado-tabla-SiguienteP">
+                        <h3>Tabla de Siguiente Posición</h3>
+                    </div>
+                </div>
+                <div id="leyenda-transiciones" style="text-align: center; margin-top: 10px;"></div>
+            </div>
+
+            <div class="resultado-bloque">
+                <h2>
+                    Diagramas
+                    <span style="font-size: 0.6em; font-weight: 500; margin-left: 15px; color: #555;">
+                        (
+                        <span style="color: #FFC107; font-weight: bold; font-size: 1.2em;">■</span> = Inicial,
+                        <span style="color: #4CAF50; font-weight: bold; font-size: 1.2em;">■</span> = Aceptación,
+                        <span style="color: #03A9F4; font-weight: bold; font-size: 1.2em;">■</span> = Ambos
+                        )
+                    </span>
+                </h2>
+
+                <div class="botones-diagrama">
+                    <button id="btn-mostrar-afd" class="btn-toggle active">AFD</button>
+                    <button id="btn-mostrar-afn" class="btn-toggle">AFN</button>
+                </div>
+
+                <div id="resultado-afd"></div>
+
+                <div id="resultado-afn"></div>
+            </div>
+            <div class="resultado-bloque" id="resultado-validacion">
+
+                <div class="form-group">
+                    <label for="text-cadenas">2. Ingrese Cadenas a Validar (Una cadena por línea)</label>
+                    <textarea id="text-cadenas" placeholder="Ejemplo: 
+ab                  (deje una línea en blanco para la cadena vacía)
+aab
+abb..."></textarea>
+                </div>
+                <button id="btn-validar">Validar</button>
+                <h2>Resultados de la Validación</h2>
+                <div id="tabla-validacion">
+                    <p>Primero crea lo demas</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const btnConstruir = document.getElementById('btn-construir');
+        const btnValidar = document.getElementById('btn-validar');
+        const inputExpresion = document.getElementById('expresion');
+        const textCadenas = document.getElementById('text-cadenas');
+        const contArbol = document.getElementById('resultado-arbol');
+        const contTablaTransiciones = document.getElementById('resultado-tabla-transiciones');
+        const contTablaSiguienteP = document.getElementById('resultado-tabla-SiguienteP');
+        const contLeyenda = document.getElementById('leyenda-transiciones');
+        const contAfd = document.getElementById('resultado-afd');
+        const contTablaValidacion = document.getElementById('tabla-validacion');
+        const errorBox = document.getElementById('error-box');
+        const contAfn = document.getElementById('resultado-afn');
+        const btnMostrarAfd = document.getElementById('btn-mostrar-afd');
+        const btnMostrarAfn = document.getElementById('btn-mostrar-afn');
+
+        // Opciones del Árbol
+        const opcionesArbol = {
+            layout: {
+                hierarchical: {
+                    enabled: true, direction: "UD", sortMethod: "directed",
+                    levelSeparation: 250, nodeSpacing: 350,
+                    blockShifting: false, edgeMinimization: false
+                }
+            },
+            physics: false,
+            nodes: {
+                shape: "circle", borderWidth: 2, shadow: true,
+                color: { background: "#ffffff", border: "#333333", highlight: { background: "#4a69bd", border: "#4a69bd" } },
+                font: {
+                    size: 15, face: "consolas", multi: 'html',
+                    bold: { size: 22, color: '#000000' }, code: { size: 14, color: '#333' }
+                },
+                margin: 20
+            },
+            edges: {
+                color: { color: "#444", highlight: "#4a69bd" },
+                arrows: { to: { enabled: true, scaleFactor: 1.0 } },
+                smooth: { enabled: true, type: "cubicBezier", forceDirection: "vertical", roundness: 0.5 },
+                width: 2
+            },
+            interaction: {
+                dragNodes: false, dragView: true, zoomView: false, selectConnectedEdges: false
+            }
+        };
+
+        // Opciones del AFD 
+        const opcionesAFD = {
+            layout: {
+                hierarchical: false
+            },
+            nodes: {
+                font: { size: 14, face: "consolas" },
+                shape: "circle"
+            },
+            edges: {
+                smooth: {
+                    enabled: true,
+                    type: 'dynamic'
+                },
+                font: { size: 14, align: 'middle', face: "consolas" },
+                arrows: { to: { enabled: true, scaleFactor: 1 } }
+            },
+            physics: {
+                enabled: true,
+                solver: 'barnesHut',
+                barnesHut: {
+                    gravitationalConstant: -4000,
+                    springLength: 150,
+                    springConstant: 0.05
+                },
+                stabilization: { iterations: 150 }
+            },
+            interaction: {
+                dragView: true,
+                zoomView: false,
+                dragNodes: true
+            }
+        };
+
+        // Opciones del AFN 
+        const opcionesAFN = {
+            layout: {
+                hierarchical: false
+            },
+            nodes: {
+                font: { size: 14, face: "consolas" },
+                shape: "circle"
+            },
+            edges: {
+                smooth: {
+                    enabled: true,
+                    type: 'dynamic'
+                },
+                font: { size: 14, align: 'middle', face: "consolas" },
+                arrows: { to: { enabled: true, scaleFactor: 1 } }
+            },
+            physics: {
+                enabled: true,
+                solver: 'barnesHut',
+                barnesHut: {
+                    gravitationalConstant: -4000,
+                    springLength: 150,
+                    springConstant: 0.05
+                },
+                stabilization: {
+                    iterations: 150
+                }
+            },
+            interaction: {
+                dragView: true,
+                zoomView: false,
+                dragNodes: true
+            }
+        };
+
+
+        let networkAFD = null;
+        let networkAFN = null;
+
+        btnConstruir.addEventListener('click', construirAutomata);
+        btnValidar.addEventListener('click', validarCadenas);
+        btnMostrarAfd.addEventListener('click', () => {
+            contAfd.style.display = 'block';
+            contAfn.style.display = 'none';
+            btnMostrarAfd.classList.add('active');
+            btnMostrarAfn.classList.remove('active');
+
+            if (networkAFD) {
+                networkAFD.fit({ animation: { duration: 300, easingFunction: 'linear' } });
+            }
+        });
+
+        btnMostrarAfn.addEventListener('click', () => {
+            contAfd.style.display = 'none';
+            contAfn.style.display = 'block';
+            btnMostrarAfd.classList.remove('active');
+            btnMostrarAfn.classList.add('active');
+
+            if (networkAFN) {
+                networkAFN.fit({ animation: { duration: 300, easingFunction: 'linear' } });
+            }
+        });
+
+
+        function asignarNiveles(datosArbol) {
+            if (!datosArbol || !datosArbol.nodes || !datosArbol.edges || datosArbol.nodes.length === 0) {
+                return;
+            }
+
+            const nodes = datosArbol.nodes;
+            const edges = datosArbol.edges;
+
+            const nodeMap = new Map(nodes.map(node => [node.id, node]));
+            const childrenMap = new Map(nodes.map(node => [node.id, []]));
+            const parentMap = new Map();
+
+            for (const edge of edges) {
+                if (!childrenMap.has(edge.from)) {
+                    childrenMap.set(edge.from, []);
+                }
+                childrenMap.get(edge.from).push(edge.to);
+                parentMap.set(edge.to, edge.from);
+            }
+
+            let rootId = null;
+            for (const node of nodes) {
+                if (!parentMap.has(node.id)) {
+                    rootId = node.id;
+                    break;
+                }
+            }
+
+            if (rootId === null && nodes.length > 0) {
+                rootId = nodes[0].id;
+            } else if (rootId === null) {
+                return;
+            }
+
+            const queue = [{ id: rootId, level: 0 }];
+            const visited = new Set([rootId]);
+
+            const rootNode = nodeMap.get(rootId);
+            if (rootNode) {
+                rootNode.level = 0;
+            }
+
+            let head = 0;
+            while (head < queue.length) {
+                const { id, level } = queue[head++];
+
+                const children = childrenMap.get(id) || [];
+                for (const childId of children) {
+                    if (!visited.has(childId)) {
+                        visited.add(childId);
+                        const childNode = nodeMap.get(childId);
+                        if (childNode) {
+                            childNode.level = level + 1;
+                            queue.push({ id: childId, level: level + 1 });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Construye todo menos la validacion
+        async function construirAutomata() {
+            const expresion = inputExpresion.value;
+            const cadenas = [];
+
+            setLoading(true, 'construir');
+
+            try {
+                const respuesta = await fetch('http://127.0.0.1:5000/analizar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expresion: expresion, cadenas: cadenas })
+                });
+
+                const datos = await respuesta.json();
+
+                if (!respuesta.ok) {
+                    throw new Error(datos.error || 'Error desconocido del servidor');
+                }
+
+                asignarNiveles(datos.datos_arbol);
+                dibujarGrafico(contArbol, datos.datos_arbol, opcionesArbol);
+                dibujarTablas(contTablaTransiciones, contTablaSiguienteP, contLeyenda, datos.datos_afd, datos.tabla_siguienteP);
+                dibujarGrafico(contAfd, datos.grafico_afd, opcionesAFD);
+                dibujarGrafico(contAfn, datos.grafico_afn, opcionesAFN);
+
+                contAfd.style.display = 'block';
+                contAfn.style.display = 'none';
+                btnMostrarAfd.classList.add('active');
+                btnMostrarAfn.classList.remove('active');
+
+                contTablaValidacion.innerHTML = '<p>Hecho 👍 ahora valida las cadenas</p>';
+
+            } catch (error) {
+                console.error("Error en construirAutomata:", error);
+                mostrarError(error.message);
+            } finally {
+                setLoading(false, 'construir');
+            }
+        }
+
+        //Crea la tabla y valida las cadenas ingrasadas
+        async function validarCadenas() {
+            const expresion = inputExpresion.value;
+
+            if (!expresion) {
+                errorBox.textContent = "Primero debe ingresar una expresión regular";
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            const cadenas = textCadenas.value.split('\n');
+
+            setLoading(true, 'validar');
+
+            try {
+                const respuesta = await fetch('http://127.0.0.1:5000/analizar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expresion: expresion, cadenas: cadenas })
+                });
+
+                const datos = await respuesta.json();
+
+                if (!respuesta.ok) {
+                    throw new Error(datos.error || 'Error desconocido del servidor');
+                }
+
+                mostrarValidacion(datos.resultados_validacion);
+                errorBox.style.display = 'none';
+
+            } catch (error) {
+                console.error("Error en validarCadenas:", error);
+                errorBox.textContent = error.message;
+                errorBox.style.display = 'block';
+                contTablaValidacion.innerHTML = '<p>Error en la validación.</p>';
+            } finally {
+                setLoading(false, 'validar');
+            }
+        }
+
+        function setLoading(cargando, tipo) {
+            if (cargando) {
+                errorBox.style.display = 'none';
+
+                if (tipo === 'construir') {
+                    btnConstruir.disabled = true;
+                    btnConstruir.textContent = 'Construyendo...';
+                    btnConstruir.id = 'status-loading';
+                    btnValidar.disabled = true;
+
+                    contArbol.innerHTML = 'Generando árbol...';
+                    contTablaTransiciones.innerHTML = 'Construyendo tabla...';
+                    contTablaSiguienteP.innerHTML = 'Calculando SiguienteP...';
+                    contLeyenda.innerHTML = '';
+                    contAfd.innerHTML = 'Construyendo AFD...';
+                    contAfn.innerHTML = 'Construyendo AFN...';
+                    contTablaValidacion.innerHTML = '<p>...</p>';
+
+                } else if (tipo === 'validar') {
+                    btnValidar.disabled = true;
+                    btnValidar.textContent = 'Validando...';
+                    btnValidar.id = 'status-loading-validar';
+
+                    contTablaValidacion.innerHTML = '<p>Validando cadenas...</p>';
+                }
+            } else {
+                if (tipo === 'construir') {
+                    btnConstruir.disabled = false;
+                    btnConstruir.textContent = 'Construir';
+                    btnConstruir.id = '';
+                    btnValidar.disabled = false;
+
+                } else if (tipo === 'validar') {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+                    btnValidar.id = '';
+                }
+            }
+        }
+
+        function dibujarGrafico(contenedor, datos, opciones) {
+            if (!datos || !datos.nodes || datos.nodes.length === 0) {
+                contenedor.innerHTML = 'Error: No se recibieron datos para este gráfico.';
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            const network = new vis.Network(contenedor, datos, opciones);
+
+            if (contenedor.id === 'resultado-afd') {
+                networkAFD = network;
+            } else if (contenedor.id === 'resultado-afn') {
+                networkAFN = network;
+            }
+            const fitOptions = { animation: { duration: 300, easingFunction: 'linear' } };
+
+            if (opciones.physics && opciones.physics.enabled) {
+                network.once('stabilizationIterationsDone', () => {
+                    network.fit(fitOptions);
+                    network.setOptions({ physics: false });
+                });
+            } else {
+                network.once('afterDrawing', () => network.fit(fitOptions));
+            }
+        }
+
+        // Dibujar Tablas
+        function dibujarTablas(contTrans, contFollow, contLeyenda, afd, SiguientePos) {
+            contTrans.innerHTML = '<h3>Tabla de Transiciones</h3>';
+            contFollow.innerHTML = '<h3>Tabla de Siguiente Posición</h3>';
+            contLeyenda.innerHTML = '';
+
+            // Tabla de Transiciones
+            const tablaTrans = document.createElement('table');
+            tablaTrans.className = 'tabla-resultados';
+            const theadTrans = document.createElement('thead');
+            let filaCabeceraTrans = '<tr><th class="estado-header">Estado (δ)</th>';
+            for (const simbolo of afd.alfabeto) filaCabeceraTrans += `<th>${simbolo}</th>`;
+            filaCabeceraTrans += '</tr>';
+            theadTrans.innerHTML = filaCabeceraTrans; tablaTrans.appendChild(theadTrans);
+            const tbodyTrans = document.createElement('tbody');
+            for (const estado_nombre of afd.estados) {
+                let nombreMostrado = estado_nombre;
+                let esInicial = (estado_nombre === afd.estado_inicial);
+                let esAceptacion = afd.estados_aceptacion.includes(estado_nombre);
+                if (esAceptacion) nombreMostrado = `*${nombreMostrado}`;
+                if (esInicial) nombreMostrado = `→${nombreMostrado}`;
+                let filaTrans = `<tr><td class="estado-header">${nombreMostrado}</td>`;
+                for (const simbolo of afd.alfabeto) {
+                    const clave = `${estado_nombre}_${simbolo}`;
+                    const destino = afd.transiciones[clave] || '—';
+                    filaTrans += `<td>${destino}</td>`;
+                }
+                filaTrans += '</tr>'; tbodyTrans.innerHTML += filaTrans;
+            }
+            tablaTrans.appendChild(tbodyTrans); contTrans.appendChild(tablaTrans);
+            contLeyenda.innerHTML = "<p>(→ = Estado Inicial, * = Estado de Aceptación)</p>";
+
+            // Tabla de Siguiente Posición
+            const tablaFollow = document.createElement('table');
+            tablaFollow.className = 'tabla-resultados';
+            tablaFollow.innerHTML = `<thead><tr><th class="posicion-header">Nodos</th><th>Símbolo</th><th>Siguiente(P)</th></tr></thead>`;
+            const tbodyFollow = document.createElement('tbody');
+            if (SiguientePos && SiguientePos.length > 0) {
+                for (const fila of SiguientePos) {
+                    tbodyFollow.innerHTML += `<tr><td class="posicion-header">${fila.posicion}</td><td>${fila.simbolo}</td><td>${fila.siguiente}</td></tr>`;
+                }
+            } else { tbodyFollow.innerHTML = '<tr><td colspan="3">No hay datos de Siguiente Posicion.</td></tr>'; }
+            tablaFollow.appendChild(tbodyFollow); contFollow.appendChild(tablaFollow);
+        }
+
+        function mostrarValidacion(resultados) {
+            contTablaValidacion.innerHTML = '';
+            if (resultados.length === 0) {
+                contTablaValidacion.innerHTML = '<p>No se ingresaron cadenas para validar.</p>';
+                return;
+            }
+            const tabla = document.createElement('table'); tabla.className = 'tabla-resultados';
+            tabla.innerHTML = '<thead><tr><th>Cadena Ingresada</th><th>Resultado del AFD</th></tr></thead>';
+            const tbody = document.createElement('tbody');
+
+            for (const res of resultados) {
+                let clase = res.esValida ? 'valido' : 'invalido'; let texto = res.esValida ? 'VÁLIDA' : 'INVÁLIDA';
+                let fila = `<tr><td>${res.cadena === "" ? "ε" : res.cadena}</td><td class="${clase}" title="${res.historial}">${texto}</td></tr>`;
+                tbody.innerHTML += fila;
+            }
+
+            tabla.appendChild(tbody);
+            contTablaValidacion.appendChild(tabla);
+
+        }
+
+        function mostrarError(mensaje) {
+            errorBox.textContent = mensaje; errorBox.style.display = 'block';
+            contArbol.innerHTML = 'Esta vacio';
+            contTablaTransiciones.innerHTML = contTablaSiguienteP.innerHTML = contLeyenda.innerHTML = '';
+            contAfd.innerHTML = 'No se pudo';
+            contAfn.innerHTML = 'No se pudo';
+            contTablaValidacion.innerHTML = '<p>Primero ingresa la expresion</p>';
+        }
+    </script>
+</body>
+
+</html>
