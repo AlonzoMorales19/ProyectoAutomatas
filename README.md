@@ -32,7 +32,13 @@ El proyecto consta de dos partes principales:
 
 Sigue estos pasos para configurar y ejecutar el proyecto localmente:
 
-1.  **Clona el repositorio** (o descarga los archivos `proyecto.py` y `visual.html` en una misma carpeta).
+1.  **Clona el repositorio**
+
+    Ejecuta el siguiente comando en tu terminal para clonar el repositorio:
+    ```bash
+    git clone https://github.com/AlonzoMorales19/ProyectoAutomatas.git
+    ```
+    (O simplemente descarga los archivos `proyecto.py` y `visual.html` y colócalos en la misma carpeta).
 
 2.  **Instala las dependencias de Python:**
     Abre una terminal en la carpeta del proyecto y ejecuta:
