@@ -228,9 +228,7 @@ class CreadorAFD:
             self.posAEstados[setPosiciones] = f"q{self.numEstados}"
             self.numEstados += 1
         return self.posAEstados[setPosiciones]
-
-
-# Simulador 
+ 
 class Simulador:
     def __init__(self, transiciones, inicial, aceptacion):
         self.transiciones = transiciones
