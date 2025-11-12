@@ -322,6 +322,7 @@ abb..."></textarea>
     </div>
 
     <script>
+        //Variables principales
         const btnConstruir = document.getElementById('btn-construir');
         const btnValidar = document.getElementById('btn-validar');
         const inputExpresion = document.getElementById('expresion');
@@ -441,6 +442,7 @@ abb..."></textarea>
         let networkAFD = null;
         let networkAFN = null;
 
+        // Botones de alternar AFD y AFN
         btnConstruir.addEventListener('click', construirAutomata);
         btnValidar.addEventListener('click', validarCadenas);
         btnMostrarAfd.addEventListener('click', () => {
@@ -465,7 +467,7 @@ abb..."></textarea>
             }
         });
 
-
+        // Niveles jerárquicos
         function asignarNiveles(datosArbol) {
             if (!datosArbol || !datosArbol.nodes || !datosArbol.edges || datosArbol.nodes.length === 0) {
                 return;
@@ -567,7 +569,7 @@ abb..."></textarea>
             }
         }
 
-        //Crea la tabla y valida las cadenas ingrasadas
+        // valida las cadenas ingrasadas
         async function validarCadenas() {
             const expresion = inputExpresion.value;
 
@@ -647,6 +649,7 @@ abb..."></textarea>
             }
         }
 
+        // dibujar cada grafo con los nodos y aristas recibidos
         function dibujarGrafico(contenedor, datos, opciones) {
             if (!datos || !datos.nodes || datos.nodes.length === 0) {
                 contenedor.innerHTML = 'Error: No se recibieron datos para este gráfico.';
@@ -718,6 +721,7 @@ abb..."></textarea>
             tablaFollow.appendChild(tbodyFollow); contFollow.appendChild(tablaFollow);
         }
 
+        // Tabla donde muestra validacion
         function mostrarValidacion(resultados) {
             contTablaValidacion.innerHTML = '';
             if (resultados.length === 0) {
