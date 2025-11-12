@@ -230,7 +230,7 @@ class CreadorAFD:
         return self.posAEstados[setPosiciones]
 
 
-# Simulador del AFD
+# Simulador 
 class Simulador:
     def __init__(self, transiciones, inicial, aceptacion):
         self.transiciones = transiciones
